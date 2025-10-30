@@ -23,12 +23,12 @@ struct Args {
     height: usize,
 
     /// Delay between drawing each cell (ms)
-    #[arg(short = 'd', long, default_value_t = 10)]
-    draw_delay: u64,
+    #[arg(short = 'd', long, value_parser = humantime::parse_duration, default_value = "10ms")]
+    draw_delay: Duration,
 
     /// Delay between animation cycles (ms)
-    #[arg(short = 'i', long, default_value_t = 200)]
-    interval_delay: u64,
+    #[arg(short = 'i', long, value_parser = humantime::parse_duration, default_value = "200ms")]
+    interval_delay: Duration,
 
     /// Color of the cells (red, green, blue, yellow, magenta, cyan, white, black, or random)
     #[arg(short = 'C', long, default_value = "green")]
@@ -120,16 +120,16 @@ fn main() -> anyhow::Result<()> {
             }
 
             execute!(stdout, MoveTo(x as u16 * 2, y as u16), Print("██"))?;
-            sleep(Duration::from_millis(args.draw_delay));
+            sleep(args.draw_delay);
         }
 
-        sleep(Duration::from_millis(args.interval_delay));
+        sleep(args.interval_delay);
 
         // Decay animation (if enabled)
         if !args.no_decay {
             for (x, y) in cells.into_iter().rev() {
                 execute!(stdout, MoveTo(x as u16 * 2, y as u16), Print("  "))?;
-                sleep(Duration::from_millis(args.draw_delay));
+                sleep(args.draw_delay);
             }
         }
 
