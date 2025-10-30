@@ -34,6 +34,10 @@ struct Args {
     #[arg(short = 'C', long, default_value = "green")]
     color: String,
 
+    /// Color of the border (red, green, blue, yellow, magenta, cyan, white, black, or none for no border)
+    #[arg(long, default_value = "none")]
+    border_color: String,
+
     /// Disable the decay (disappearing) animation
     #[arg(long)]
     no_decay: bool,
@@ -75,6 +79,37 @@ fn get_random_color(rng: &mut StdRng) -> Color {
     *colors.choose(rng).unwrap()
 }
 
+fn draw_border(
+    stdout: &mut std::io::Stdout,
+    width: usize,
+    height: usize,
+    color: Color,
+) -> anyhow::Result<()> {
+    execute!(stdout, SetForegroundColor(color))?;
+
+    // Draw top and bottom borders
+    for x in 0..width + 2 {
+        execute!(stdout, MoveTo(x as u16 * 2, 0), Print("██"))?;
+        execute!(
+            stdout,
+            MoveTo(x as u16 * 2, (height + 1) as u16),
+            Print("██")
+        )?;
+    }
+
+    // Draw left and right borders
+    for y in 1..=height {
+        execute!(stdout, MoveTo(0, y as u16), Print("██"))?;
+        execute!(
+            stdout,
+            MoveTo((width + 1) as u16 * 2, y as u16),
+            Print("██")
+        )?;
+    }
+
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let mut stdout = stdout();
@@ -84,6 +119,9 @@ fn main() -> anyhow::Result<()> {
 
     let fixed_color = parse_color(&args.color);
     let use_random_colors = args.color.to_lowercase() == "random";
+
+    let border_color = parse_color(&args.border_color);
+    let has_border = border_color.is_some();
 
     let mut cycles_remaining = args.cycles;
 
@@ -97,7 +135,16 @@ fn main() -> anyhow::Result<()> {
     loop {
         execute!(stdout, Clear(ClearType::All))?;
 
+        // Draw border if enabled
+        if let Some(color) = border_color {
+            draw_border(&mut stdout, args.width, args.height, color)?;
+        }
+
         let mut cells = Vec::new();
+
+        // Adjust cell positions if border is present
+        let x_offset = if has_border { 1 } else { 0 };
+        let y_offset = if has_border { 1 } else { 0 };
 
         for y in 0..args.height {
             for x in 0..args.width {
@@ -119,7 +166,11 @@ fn main() -> anyhow::Result<()> {
                 execute!(stdout, SetForegroundColor(Color::Green))?;
             }
 
-            execute!(stdout, MoveTo(x as u16 * 2, y as u16), Print("██"))?;
+            execute!(
+                stdout,
+                MoveTo((x + x_offset) as u16 * 2, (y + y_offset) as u16),
+                Print("██")
+            )?;
             sleep(args.draw_delay);
         }
 
@@ -128,7 +179,11 @@ fn main() -> anyhow::Result<()> {
         // Decay animation (if enabled)
         if !args.no_decay {
             for (x, y) in cells.into_iter().rev() {
-                execute!(stdout, MoveTo(x as u16 * 2, y as u16), Print("  "))?;
+                execute!(
+                    stdout,
+                    MoveTo((x + x_offset) as u16 * 2, (y + y_offset) as u16),
+                    Print("  ")
+                )?;
                 sleep(args.draw_delay);
             }
         }
