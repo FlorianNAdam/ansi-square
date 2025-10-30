@@ -1,0 +1,10 @@
+[package]
+name = "ansi-square"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+clap = { version = "4.5.51", features = ["derive"] }
+crossterm = "0.29.0"
+rand = "0.9.2"

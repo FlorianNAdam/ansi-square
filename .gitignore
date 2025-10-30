@@ -1,0 +1,8 @@
+/target
+.envrc.private
+.direnv
+.devenv
+/rbg_client
+/recordings
+/logs
+result
